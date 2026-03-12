@@ -62,8 +62,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
                         .requestMatchers("/api/students/**").hasAnyRole("STUDENT", "ADMIN")
                         .requestMatchers("/api/companies/**").hasAnyRole("COMPANY", "ADMIN")
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -73,8 +72,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173",  // Vite
-                "http://localhost:3000"   // Create React App
+                "http://localhost:5173", // Vite
+                "http://localhost:5174", // Vite
+                "http://localhost:3000" // Create React App
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
