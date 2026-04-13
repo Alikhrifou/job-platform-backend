@@ -99,12 +99,31 @@ public class ApplicationService {
         return toResponse(application);
     }
 
+    public List<ApplicationResponse> getCompanyApplications() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return applicationRepository.findAll().stream()
+                .filter(a -> a.getJob().getCompany().getUser().getId().equals(user.getId()))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     private ApplicationResponse toResponse(Application application) {
         ApplicationResponse response = modelMapper.map(application, ApplicationResponse.class);
         response.setStudentId(application.getStudent().getId());
         response.setJobId(application.getJob().getId());
         response.setJobTitle(application.getJob().getTitle());
         response.setCompanyName(application.getJob().getCompany().getCompanyName());
+        response.setStudentName(application.getStudent().getUser().getFirstName() + " " + application.getStudent().getUser().getLastName());
+        response.setStudentEmail(application.getStudent().getUser().getEmail());
+        response.setStudentUniversity(application.getStudent().getUniversity());
+        response.setStudentMajor(application.getStudent().getMajor());
+        response.setStudentGpa(application.getStudent().getGpa());
+        response.setStudentBio(application.getStudent().getBio());
+        response.setStudentPortfolioUrl(application.getStudent().getPortfolioUrl());
+        response.setStudentResumeUrl(application.getStudent().getResumeUrl());
         return response;
     }
 }

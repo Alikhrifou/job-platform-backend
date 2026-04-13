@@ -42,6 +42,12 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.getMyApplications());
     }
 
+    @GetMapping("/company")
+    @Operation(summary = "Get all applications for the current company's jobs")
+    public ResponseEntity<List<ApplicationResponse>> getCompanyApplications() {
+        return ResponseEntity.ok(applicationService.getCompanyApplications());
+    }
+
     @GetMapping("/job/{jobId}")
     @Operation(summary = "Get all applications for a job")
     public ResponseEntity<List<ApplicationResponse>> getJobApplications(@PathVariable Long jobId) {

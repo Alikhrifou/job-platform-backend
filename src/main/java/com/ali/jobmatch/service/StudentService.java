@@ -58,8 +58,9 @@ public class StudentService {
 
         studentProfile = studentProfileRepository.save(studentProfile);
 
+        // Manage skills through the entity collection so it stays in sync
+        studentProfile.getSkills().clear();
         if (request.getSkills() != null && !request.getSkills().isEmpty()) {
-            studentSkillRepository.deleteByStudentId(studentProfile.getId());
             for (Map.Entry<Long, Integer> entry : request.getSkills().entrySet()) {
                 Skill skill = skillRepository.findById(entry.getKey())
                         .orElseThrow(() -> new ResourceNotFoundException("Skill not found: " + entry.getKey()));
@@ -67,9 +68,10 @@ public class StudentService {
                 studentSkill.setStudent(studentProfile);
                 studentSkill.setSkill(skill);
                 studentSkill.setLevel(entry.getValue());
-                studentSkillRepository.save(studentSkill);
+                studentProfile.getSkills().add(studentSkill);
             }
         }
+        studentProfile = studentProfileRepository.save(studentProfile);
 
         return studentMapper.toResponse(studentProfile);
     }

@@ -43,6 +43,9 @@ public class JobService {
     private JobSkillRepository jobSkillRepository;
 
     @Autowired
+    private com.ali.jobmatch.repository.ApplicationRepository applicationRepository;
+
+    @Autowired
     private JobMapper jobMapper;
 
     @Transactional
@@ -136,9 +139,11 @@ public class JobService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public void deleteJob(Long jobId) {
         JobOffer jobOffer = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found"));
+        applicationRepository.deleteByJobId(jobId);
         jobRepository.delete(jobOffer);
     }
 }

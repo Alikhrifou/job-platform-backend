@@ -39,7 +39,11 @@ public class AuthService {
         try {
             role = Role.valueOf(registerRequest.getRole().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid role. Must be STUDENT, COMPANY, or ADMIN");
+            throw new BadRequestException("Invalid role. Must be STUDENT or COMPANY");
+        }
+
+        if (role == Role.ADMIN) {
+            throw new BadRequestException("Cannot register as ADMIN via public registration");
         }
 
         User user = User.builder()

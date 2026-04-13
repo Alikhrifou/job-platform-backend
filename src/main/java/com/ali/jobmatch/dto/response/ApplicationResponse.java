@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class ApplicationResponse {
     private Long id;
     private Long studentId;
+    private String studentName;
     private Long jobId;
     private String jobTitle;
     private String companyName;
@@ -22,4 +23,11 @@ public class ApplicationResponse {
     private LocalDateTime reviewedAt;
     private String reviewNotes;
     private Double matchScore;
+    private String studentEmail;
+    private String studentUniversity;
+    private String studentMajor;
+    private Double studentGpa;
+    private String studentBio;
+    private String studentPortfolioUrl;
+    private String studentResumeUrl;
 }
