@@ -3,7 +3,7 @@
 # ============================================================
 # We use a full JDK + Maven image so we can compile the project.
 # "AS build" names this stage so we can reference it later.
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-25 AS build
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -25,7 +25,7 @@ RUN mvn package -DskipTests -B
 # STAGE 2: Run the application
 # ============================================================
 # Use a slim JRE image (no compiler, no Maven — much smaller)
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 
