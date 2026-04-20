@@ -37,6 +37,8 @@ public class StudentProfile {
 
     private String resumeUrl;
 
+    private String resumeOriginalName;
+
     @Column(nullable = false)
     private Double gpa = 0.0;
 

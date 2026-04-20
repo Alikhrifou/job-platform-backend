@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -37,6 +38,9 @@ public class StudentService {
 
     @Autowired
     private StudentMapper studentMapper;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @Transactional
     public StudentProfileResponse createOrUpdateProfile(StudentProfileRequest request) {
@@ -91,5 +95,47 @@ public class StudentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Student profile not found"));
 
         return studentMapper.toResponse(studentProfile);
+    }
+
+    @Transactional
+    public String uploadResume(MultipartFile file) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        StudentProfile profile = studentProfileRepository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    StudentProfile newProfile = new StudentProfile();
+                    newProfile.setUser(user);
+                    return studentProfileRepository.save(newProfile);
+                });
+
+        // Delete old file if exists
+        if (profile.getResumeUrl() != null && !profile.getResumeUrl().isBlank()) {
+            fileStorageService.deleteResume(profile.getResumeUrl());
+        }
+
+        String filename = fileStorageService.storeResume(file, user.getId());
+        profile.setResumeUrl(filename);
+        profile.setResumeOriginalName(file.getOriginalFilename());
+        studentProfileRepository.save(profile);
+        return filename;
+    }
+
+    @Transactional
+    public void deleteResume() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        StudentProfile profile = studentProfileRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found"));
+
+        if (profile.getResumeUrl() != null && !profile.getResumeUrl().isBlank()) {
+            fileStorageService.deleteResume(profile.getResumeUrl());
+            profile.setResumeUrl(null);
+            profile.setResumeOriginalName(null);
+            studentProfileRepository.save(profile);
+        }
     }
 }

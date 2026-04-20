@@ -30,4 +30,5 @@ public class ApplicationResponse {
     private String studentBio;
     private String studentPortfolioUrl;
     private String studentResumeUrl;
+    private String studentResumeOriginalName;
 }

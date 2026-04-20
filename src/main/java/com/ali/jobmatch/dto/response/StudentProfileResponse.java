@@ -21,6 +21,7 @@ public class StudentProfileResponse {
     private String bio;
     private String portfolioUrl;
     private String resumeUrl;
+    private String resumeOriginalName;
     private Double gpa;
     private Map<String, Integer> skills; // skill name -> level
 }

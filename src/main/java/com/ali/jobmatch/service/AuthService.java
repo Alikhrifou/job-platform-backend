@@ -3,6 +3,7 @@ package com.ali.jobmatch.service;
 import com.ali.jobmatch.dto.request.LoginRequest;
 import com.ali.jobmatch.dto.request.RegisterRequest;
 import com.ali.jobmatch.dto.response.AuthResponse;
+import com.ali.jobmatch.entity.RefreshToken;
 import com.ali.jobmatch.entity.Role;
 import com.ali.jobmatch.entity.User;
 import com.ali.jobmatch.exception.BadRequestException;
@@ -29,6 +30,9 @@ public class AuthService {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
 
     public AuthResponse register(RegisterRequest registerRequest) {
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
@@ -59,10 +63,11 @@ public class AuthService {
         userRepository.save(user);
 
         String token = jwtService.generateTokenFromUsername(user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return new AuthResponse(
                 token,
-                null,
+                refreshToken.getToken(),
                 "Bearer",
                 user.getId(),
                 user.getEmail(),
@@ -80,10 +85,11 @@ public class AuthService {
                 .orElseThrow(() -> new BadRequestException("Invalid credentials"));
 
         String token = jwtService.generateToken(authentication);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return new AuthResponse(
                 token,
-                null,
+                refreshToken.getToken(),
                 "Bearer",
                 user.getId(),
                 user.getEmail(),

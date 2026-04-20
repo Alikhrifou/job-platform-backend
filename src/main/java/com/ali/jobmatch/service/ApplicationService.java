@@ -124,6 +124,7 @@ public class ApplicationService {
         response.setStudentBio(application.getStudent().getBio());
         response.setStudentPortfolioUrl(application.getStudent().getPortfolioUrl());
         response.setStudentResumeUrl(application.getStudent().getResumeUrl());
+        response.setStudentResumeOriginalName(application.getStudent().getResumeOriginalName());
         return response;
     }
 }
