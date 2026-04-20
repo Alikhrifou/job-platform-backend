@@ -1,0 +1,15 @@
+# Don't send these to Docker — they're rebuilt inside the container
+target/
+.git/
+.gitignore
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# These are local config files, not needed in the image
+.env
+uploads/
+build/
+HELP.md
