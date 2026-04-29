@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -57,24 +58,41 @@ public class StudentService {
         studentProfile.setGraduationDate(request.getGraduationDate());
         studentProfile.setBio(request.getBio());
         studentProfile.setPortfolioUrl(request.getPortfolioUrl());
-        studentProfile.setResumeUrl(request.getResumeUrl());
-        studentProfile.setGpa(request.getGpa());
+        // resumeUrl is managed separately via /profile/resume endpoint — do not overwrite here
 
         studentProfile = studentProfileRepository.save(studentProfile);
 
-        // Manage skills through the entity collection so it stays in sync
-        studentProfile.getSkills().clear();
-        if (request.getSkills() != null && !request.getSkills().isEmpty()) {
-            for (Map.Entry<Long, Integer> entry : request.getSkills().entrySet()) {
-                Skill skill = skillRepository.findById(entry.getKey())
-                        .orElseThrow(() -> new ResourceNotFoundException("Skill not found: " + entry.getKey()));
-                StudentSkill studentSkill = new StudentSkill();
-                studentSkill.setStudent(studentProfile);
-                studentSkill.setSkill(skill);
-                studentSkill.setLevel(entry.getValue());
-                studentProfile.getSkills().add(studentSkill);
-            }
+        // Update the managed collection in place to avoid composite-key identity conflicts.
+        Map<Long, Integer> requestedSkills = request.getSkills() != null ? request.getSkills() : Map.of();
+        Map<Long, StudentSkill> existingSkillsById = new HashMap<>();
+        for (StudentSkill studentSkill : studentProfile.getSkills()) {
+            existingSkillsById.put(studentSkill.getSkill().getId(), studentSkill);
         }
+
+        studentProfile.getSkills().removeIf(studentSkill ->
+                !requestedSkills.containsKey(studentSkill.getSkill().getId()));
+
+        for (Map.Entry<Long, Integer> entry : requestedSkills.entrySet()) {
+            Long skillId = entry.getKey();
+            Integer level = entry.getValue();
+
+            StudentSkill existingSkill = existingSkillsById.get(skillId);
+            if (existingSkill != null) {
+                existingSkill.setLevel(level);
+                continue;
+            }
+
+            Skill skill = skillRepository.findById(skillId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Skill not found: " + skillId));
+
+            StudentSkill studentSkill = new StudentSkill();
+            studentSkill.setId(new StudentSkill.StudentSkillId(studentProfile.getId(), skillId));
+            studentSkill.setStudent(studentProfile);
+            studentSkill.setSkill(skill);
+            studentSkill.setLevel(level);
+            studentProfile.getSkills().add(studentSkill);
+        }
+
         studentProfile = studentProfileRepository.save(studentProfile);
 
         return studentMapper.toResponse(studentProfile);

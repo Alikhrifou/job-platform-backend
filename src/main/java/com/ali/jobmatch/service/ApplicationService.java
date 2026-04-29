@@ -1,6 +1,8 @@
 package com.ali.jobmatch.service;
 
 import com.ali.jobmatch.dto.request.ApplicationRequest;
+import com.ali.jobmatch.dto.request.InterviewRequest;
+import com.ali.jobmatch.dto.request.ReviewNotesRequest;
 import com.ali.jobmatch.dto.response.ApplicationResponse;
 import com.ali.jobmatch.entity.Application;
 import com.ali.jobmatch.entity.JobOffer;
@@ -17,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,6 +42,9 @@ public class ApplicationService {
     @Autowired
     private ModelMapper modelMapper;
 
+    @Autowired
+    private MatchingService matchingService;
+
     public ApplicationResponse applyForJob(ApplicationRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findByEmail(authentication.getName())
@@ -59,6 +65,10 @@ public class ApplicationService {
         application.setJob(jobOffer);
         application.setCoverLetter(request.getCoverLetter());
         application.setStatus(Application.ApplicationStatus.PENDING);
+
+        // compute and store match score immediately on apply
+        double score = matchingService.calculateMatchScore(studentProfile, application);
+        application.setMatchScore(score);
 
         applicationRepository.save(application);
         return toResponse(application);
@@ -95,6 +105,27 @@ public class ApplicationService {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
         application.setStatus(status);
+        application.setReviewedAt(java.time.LocalDateTime.now());
+        applicationRepository.save(application);
+        return toResponse(application);
+    }
+
+    public ApplicationResponse updateReviewNotes(Long applicationId, ReviewNotesRequest request) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+        application.setReviewNotes(request.getNotes());
+        application.setReviewedAt(java.time.LocalDateTime.now());
+        applicationRepository.save(application);
+        return toResponse(application);
+    }
+
+    public ApplicationResponse scheduleInterview(Long applicationId, InterviewRequest request) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+        application.setInterviewDate(request.getInterviewDate());
+        application.setInterviewLink(request.getInterviewLink());
+        application.setStatus(Application.ApplicationStatus.INTERVIEW_SCHEDULED);
+        application.setReviewedAt(java.time.LocalDateTime.now());
         applicationRepository.save(application);
         return toResponse(application);
     }
@@ -120,7 +151,6 @@ public class ApplicationService {
         response.setStudentEmail(application.getStudent().getUser().getEmail());
         response.setStudentUniversity(application.getStudent().getUniversity());
         response.setStudentMajor(application.getStudent().getMajor());
-        response.setStudentGpa(application.getStudent().getGpa());
         response.setStudentBio(application.getStudent().getBio());
         response.setStudentPortfolioUrl(application.getStudent().getPortfolioUrl());
         response.setStudentResumeUrl(application.getStudent().getResumeUrl());

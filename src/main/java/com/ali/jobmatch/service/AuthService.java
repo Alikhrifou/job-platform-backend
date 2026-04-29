@@ -75,7 +75,6 @@ public class AuthService {
         if (role == Role.STUDENT) {
             StudentProfile studentProfile = StudentProfile.builder()
                     .user(user)
-                    .gpa(0.0)
                     .build();
             studentProfileRepository.save(studentProfile);
         } else if (role == Role.COMPANY) {

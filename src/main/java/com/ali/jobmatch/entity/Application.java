@@ -40,6 +40,10 @@ public class Application {
 
     private String reviewNotes;
 
+    private LocalDateTime interviewDate;
+
+    private String interviewLink;
+
     @Column(nullable = false)
     private Double matchScore = 0.0;
 

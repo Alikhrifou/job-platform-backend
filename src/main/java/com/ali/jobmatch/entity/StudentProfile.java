@@ -39,9 +39,6 @@ public class StudentProfile {
 
     private String resumeOriginalName;
 
-    @Column(nullable = false)
-    private Double gpa = 0.0;
-
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudentSkill> skills = new ArrayList<>();
 }

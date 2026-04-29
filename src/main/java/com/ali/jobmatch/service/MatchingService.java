@@ -8,6 +8,7 @@ import com.ali.jobmatch.repository.ApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -17,37 +18,54 @@ public class MatchingService {
     @Autowired
     private ApplicationRepository applicationRepository;
 
+    @Autowired
+    private FileStorageService fileStorageService;
+
     /**
      * Score = weighted average of:
-     * - Skill match (70%): for each required skill, student gets points proportional
+     * - Skill match   (80%): for each required skill, student gets points proportional
      *   to their level vs required level (capped at 100% per skill)
-     * - GPA score (30%): gpa / 4.0 * 100
+     * - CV keywords   (20%): % of required skill names found in the resume text.
+     *   If no resume uploaded the weight is fully attributed to skills (normalized to 100%).
      */
     public Double calculateMatchScore(StudentProfile studentProfile, Application application) {
-        // Build map: skillId -> student level
         Map<Long, Integer> studentSkillMap = studentProfile.getSkills().stream()
                 .collect(Collectors.toMap(
                         ss -> ss.getSkill().getId(),
-                        ss -> ss.getLevel()
+                        StudentSkill::getLevel
                 ));
 
-        java.util.List<JobSkill> requiredSkills = application.getJob().getRequiredSkills();
+        List<JobSkill> requiredSkills = application.getJob().getRequiredSkills();
 
         if (requiredSkills.isEmpty()) {
-            double gpaScore = (studentProfile.getGpa() / 4.0) * 100;
-            return Math.min(gpaScore, 100.0);
+            return 0.0;
         }
 
         double skillScore = requiredSkills.stream().mapToDouble(jobSkill -> {
             Integer studentLevel = studentSkillMap.get(jobSkill.getSkill().getId());
             if (studentLevel == null) return 0.0;
-            // full points if student level >= required, partial otherwise
             return Math.min((double) studentLevel / jobSkill.getRequiredLevel(), 1.0) * 100;
         }).average().orElse(0.0);
 
-        double gpaScore = (studentProfile.getGpa() / 4.0) * 100;
+        String resumeText = fileStorageService.readResumeText(studentProfile.getResumeUrl());
 
-        return (skillScore * 0.7) + (gpaScore * 0.3);
+        if (resumeText.isBlank()) {
+            // No CV uploaded — skill score is the full score
+            return skillScore;
+        }
+
+        double cvKeywordScore = calculateCvKeywordScore(resumeText, requiredSkills);
+
+        return (skillScore * 0.80) + (cvKeywordScore * 0.20);
+    }
+
+    private double calculateCvKeywordScore(String resumeText, List<JobSkill> requiredSkills) {
+        if (resumeText.isBlank() || requiredSkills.isEmpty()) return 0.0;
+        String lower = resumeText.toLowerCase();
+        long matches = requiredSkills.stream()
+                .filter(js -> lower.contains(js.getSkill().getName().toLowerCase()))
+                .count();
+        return ((double) matches / requiredSkills.size()) * 100;
     }
 
     public void updateAllMatchScores() {
@@ -58,3 +76,4 @@ public class MatchingService {
         });
     }
 }
+

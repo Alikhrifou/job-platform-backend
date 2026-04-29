@@ -1,6 +1,8 @@
 package com.ali.jobmatch.controller;
 
 import com.ali.jobmatch.dto.request.ApplicationRequest;
+import com.ali.jobmatch.dto.request.InterviewRequest;
+import com.ali.jobmatch.dto.request.ReviewNotesRequest;
 import com.ali.jobmatch.dto.response.ApplicationResponse;
 import com.ali.jobmatch.entity.Application;
 import com.ali.jobmatch.service.ApplicationService;
@@ -60,5 +62,21 @@ public class ApplicationController {
             @PathVariable Long applicationId,
             @RequestParam Application.ApplicationStatus status) {
         return ResponseEntity.ok(applicationService.updateApplicationStatus(applicationId, status));
+    }
+
+    @PatchMapping("/{applicationId}/notes")
+    @Operation(summary = "Update review notes for an application")
+    public ResponseEntity<ApplicationResponse> updateReviewNotes(
+            @PathVariable Long applicationId,
+            @RequestBody ReviewNotesRequest request) {
+        return ResponseEntity.ok(applicationService.updateReviewNotes(applicationId, request));
+    }
+
+    @PatchMapping("/{applicationId}/interview")
+    @Operation(summary = "Schedule an interview for an application")
+    public ResponseEntity<ApplicationResponse> scheduleInterview(
+            @PathVariable Long applicationId,
+            @RequestBody InterviewRequest request) {
+        return ResponseEntity.ok(applicationService.scheduleInterview(applicationId, request));
     }
 }

@@ -2,6 +2,11 @@ package com.ali.jobmatch.service;
 
 import com.ali.jobmatch.exception.BadRequestException;
 import jakarta.annotation.PostConstruct;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -9,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +22,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class FileStorageService {
@@ -106,5 +113,33 @@ public class FileStorageService {
                 Files.deleteIfExists(filePath);
             }
         } catch (Exception ignored) {}
+    }
+
+    /**
+     * Extracts plain text from an uploaded resume file (PDF or DOCX).
+     * Returns an empty string if the file is missing, unreadable, or an unsupported format.
+     */
+    public String readResumeText(String filename) {
+        if (filename == null || filename.isBlank()) return "";
+        if (filename.startsWith("http://") || filename.startsWith("https://")) return "";
+
+        Path filePath = uploadPath.resolve(filename).normalize();
+        if (!filePath.startsWith(uploadPath) || !Files.exists(filePath)) return "";
+
+        String lower = filename.toLowerCase();
+        try (InputStream in = Files.newInputStream(filePath)) {
+            if (lower.endsWith(".pdf")) {
+                try (PDDocument doc = Loader.loadPDF(Files.readAllBytes(filePath))) {
+                    return new PDFTextStripper().getText(doc);
+                }
+            } else if (lower.endsWith(".docx")) {
+                try (XWPFDocument doc = new XWPFDocument(in)) {
+                    return doc.getParagraphs().stream()
+                            .map(XWPFParagraph::getText)
+                            .collect(Collectors.joining(" "));
+                }
+            }
+        } catch (Exception ignored) {}
+        return "";
     }
 }

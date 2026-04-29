@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Map;
 
 @Data
@@ -17,11 +17,10 @@ public class StudentProfileResponse {
     private String fullName;
     private String university;
     private String major;
-    private LocalDateTime graduationDate;
+    private LocalDate graduationDate;
     private String bio;
     private String portfolioUrl;
     private String resumeUrl;
     private String resumeOriginalName;
-    private Double gpa;
     private Map<String, Integer> skills; // skill name -> level
 }

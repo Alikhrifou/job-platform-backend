@@ -23,10 +23,11 @@ public class ApplicationResponse {
     private LocalDateTime reviewedAt;
     private String reviewNotes;
     private Double matchScore;
+    private LocalDateTime interviewDate;
+    private String interviewLink;
     private String studentEmail;
     private String studentUniversity;
     private String studentMajor;
-    private Double studentGpa;
     private String studentBio;
     private String studentPortfolioUrl;
     private String studentResumeUrl;
