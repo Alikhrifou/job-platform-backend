@@ -3,10 +3,14 @@ package com.ali.jobmatch.service;
 import com.ali.jobmatch.dto.request.LoginRequest;
 import com.ali.jobmatch.dto.request.RegisterRequest;
 import com.ali.jobmatch.dto.response.AuthResponse;
+import com.ali.jobmatch.entity.CompanyProfile;
 import com.ali.jobmatch.entity.RefreshToken;
 import com.ali.jobmatch.entity.Role;
+import com.ali.jobmatch.entity.StudentProfile;
 import com.ali.jobmatch.entity.User;
 import com.ali.jobmatch.exception.BadRequestException;
+import com.ali.jobmatch.repository.CompanyProfileRepository;
+import com.ali.jobmatch.repository.StudentProfileRepository;
 import com.ali.jobmatch.repository.UserRepository;
 import com.ali.jobmatch.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +25,12 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private StudentProfileRepository studentProfileRepository;
+
+    @Autowired
+    private CompanyProfileRepository companyProfileRepository;
 
     @Autowired
     private JwtService jwtService;
@@ -61,6 +71,22 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+
+        if (role == Role.STUDENT) {
+            StudentProfile studentProfile = StudentProfile.builder()
+                    .user(user)
+                    .gpa(0.0)
+                    .build();
+            studentProfileRepository.save(studentProfile);
+        } else if (role == Role.COMPANY) {
+            CompanyProfile companyProfile = CompanyProfile.builder()
+                    .user(user)
+                    .companyName("")
+                    .industry("")
+                    .employeeCount(0)
+                    .build();
+            companyProfileRepository.save(companyProfile);
+        }
 
         String token = jwtService.generateTokenFromUsername(user.getEmail());
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
