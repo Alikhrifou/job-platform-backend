@@ -56,6 +56,13 @@ public class JobController {
         return ResponseEntity.ok(jobService.searchJobs(title));
     }
 
+    @GetMapping("/my-jobs")
+    @Operation(summary = "Get all jobs for the authenticated company")
+    @SecurityRequirement(name = "Bearer Token")
+    public ResponseEntity<List<JobOfferResponse>> getMyJobs() {
+        return ResponseEntity.ok(jobService.getMyCompanyJobs());
+    }
+
     @GetMapping("/company/{companyId}")
     @Operation(summary = "Get all jobs by company")
     public ResponseEntity<List<JobOfferResponse>> getCompanyJobs(@PathVariable Long companyId) {

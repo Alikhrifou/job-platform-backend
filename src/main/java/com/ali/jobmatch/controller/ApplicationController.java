@@ -2,6 +2,7 @@ package com.ali.jobmatch.controller;
 
 import com.ali.jobmatch.dto.request.ApplicationRequest;
 import com.ali.jobmatch.dto.request.InterviewRequest;
+import com.ali.jobmatch.dto.request.InterviewResponseRequest;
 import com.ali.jobmatch.dto.request.ReviewNotesRequest;
 import com.ali.jobmatch.dto.response.ApplicationResponse;
 import com.ali.jobmatch.entity.Application;
@@ -44,6 +45,12 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.getMyApplications());
     }
 
+    @GetMapping("/check/{jobId}")
+    @Operation(summary = "Check if the current student has already applied to a job")
+    public ResponseEntity<Boolean> checkApplied(@PathVariable Long jobId) {
+        return ResponseEntity.ok(applicationService.hasApplied(jobId));
+    }
+
     @GetMapping("/company")
     @Operation(summary = "Get all applications for the current company's jobs")
     public ResponseEntity<List<ApplicationResponse>> getCompanyApplications() {
@@ -78,5 +85,13 @@ public class ApplicationController {
             @PathVariable Long applicationId,
             @RequestBody InterviewRequest request) {
         return ResponseEntity.ok(applicationService.scheduleInterview(applicationId, request));
+    }
+
+    @PatchMapping("/{applicationId}/interview-response")
+    @Operation(summary = "Student accepts or requests reschedule of interview")
+    public ResponseEntity<ApplicationResponse> respondToInterview(
+            @PathVariable Long applicationId,
+            @RequestBody InterviewResponseRequest request) {
+        return ResponseEntity.ok(applicationService.respondToInterview(applicationId, request));
     }
 }

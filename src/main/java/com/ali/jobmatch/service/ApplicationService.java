@@ -2,6 +2,7 @@ package com.ali.jobmatch.service;
 
 import com.ali.jobmatch.dto.request.ApplicationRequest;
 import com.ali.jobmatch.dto.request.InterviewRequest;
+import com.ali.jobmatch.dto.request.InterviewResponseRequest;
 import com.ali.jobmatch.dto.request.ReviewNotesRequest;
 import com.ali.jobmatch.dto.response.ApplicationResponse;
 import com.ali.jobmatch.entity.Application;
@@ -94,6 +95,15 @@ public class ApplicationService {
                 .collect(Collectors.toList());
     }
 
+    public boolean hasApplied(Long jobId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        StudentProfile studentProfile = studentProfileRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found"));
+        return applicationRepository.findByStudentIdAndJobId(studentProfile.getId(), jobId).isPresent();
+    }
+
     public List<ApplicationResponse> getJobApplications(Long jobId) {
         return applicationRepository.findByJobId(jobId)
                 .stream()
@@ -125,7 +135,40 @@ public class ApplicationService {
         application.setInterviewDate(request.getInterviewDate());
         application.setInterviewLink(request.getInterviewLink());
         application.setStatus(Application.ApplicationStatus.INTERVIEW_SCHEDULED);
+        application.setInterviewConfirmed(false);
+        application.setRescheduleRequested(false);
+        application.setRescheduleNote(null);
         application.setReviewedAt(java.time.LocalDateTime.now());
+        applicationRepository.save(application);
+        return toResponse(application);
+    }
+
+    public ApplicationResponse respondToInterview(Long applicationId, InterviewResponseRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+
+        // Ensure the application belongs to this student
+        if (!application.getStudent().getUser().getId().equals(user.getId())) {
+            throw new BadRequestException("Not authorized to respond to this interview");
+        }
+
+        if (!"ACCEPT".equalsIgnoreCase(request.getAction()) && !"RESCHEDULE".equalsIgnoreCase(request.getAction())) {
+            throw new BadRequestException("Action must be ACCEPT or RESCHEDULE");
+        }
+
+        if ("ACCEPT".equalsIgnoreCase(request.getAction())) {
+            application.setInterviewConfirmed(true);
+            application.setRescheduleRequested(false);
+            application.setRescheduleNote(null);
+        } else {
+            application.setRescheduleRequested(true);
+            application.setInterviewConfirmed(false);
+            application.setRescheduleNote(request.getRescheduleNote());
+        }
         applicationRepository.save(application);
         return toResponse(application);
     }

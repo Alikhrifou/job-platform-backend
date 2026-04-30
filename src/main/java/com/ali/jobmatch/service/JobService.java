@@ -139,6 +139,18 @@ public class JobService {
                 .collect(Collectors.toList());
     }
 
+    public List<JobOfferResponse> getMyCompanyJobs() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        CompanyProfile companyProfile = companyProfileRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Company profile not found"));
+        return jobRepository.findByCompanyId(companyProfile.getId())
+                .stream()
+                .map(jobOffer -> jobMapper.toResponse(jobOffer))
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void deleteJob(Long jobId) {
         JobOffer jobOffer = jobRepository.findById(jobId)

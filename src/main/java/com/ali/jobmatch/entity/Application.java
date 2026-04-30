@@ -44,6 +44,12 @@ public class Application {
 
     private String interviewLink;
 
+    private Boolean interviewConfirmed = false;
+
+    private Boolean rescheduleRequested = false;
+
+    private String rescheduleNote;
+
     @Column(nullable = false)
     private Double matchScore = 0.0;
 
