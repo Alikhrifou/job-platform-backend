@@ -75,5 +75,13 @@ public class MatchingService {
             applicationRepository.save(application);
         });
     }
+
+    public void recalculateScoresForStudent(Long studentProfileId) {
+        applicationRepository.findByStudentId(studentProfileId).forEach(application -> {
+            double score = calculateMatchScore(application.getStudent(), application);
+            application.setMatchScore(score);
+            applicationRepository.save(application);
+        });
+    }
 }
 

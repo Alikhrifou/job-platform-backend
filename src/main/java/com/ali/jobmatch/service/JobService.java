@@ -125,11 +125,20 @@ public class JobService {
                 .collect(Collectors.toList());
     }
 
-    public List<JobOfferResponse> searchJobs(String title) {
-        return jobRepository.findByTitleContainingIgnoreCase(title)
-                .stream()
-                .map(jobOffer -> jobMapper.toResponse(jobOffer))
-                .collect(Collectors.toList());
+    public List<JobOfferResponse> searchJobs(String title, String city) {
+        boolean hasTitle = title != null && !title.isBlank();
+        boolean hasCity  = city  != null && !city.isBlank();
+        List<JobOffer> results;
+        if (hasTitle && hasCity) {
+            results = jobRepository.findByTitleContainingIgnoreCaseAndLocationContainingIgnoreCase(title, city);
+        } else if (hasTitle) {
+            results = jobRepository.findByTitleContainingIgnoreCase(title);
+        } else if (hasCity) {
+            results = jobRepository.findByLocationContainingIgnoreCase(city);
+        } else {
+            results = jobRepository.findByIsActiveTrue();
+        }
+        return results.stream().map(jobMapper::toResponse).collect(Collectors.toList());
     }
 
     public List<JobOfferResponse> getCompanyJobs(Long companyId) {

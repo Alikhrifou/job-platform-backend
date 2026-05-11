@@ -43,6 +43,9 @@ public class StudentService {
     @Autowired
     private FileStorageService fileStorageService;
 
+    @Autowired
+    private MatchingService matchingService;
+
     @Transactional
     public StudentProfileResponse createOrUpdateProfile(StudentProfileRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -94,6 +97,10 @@ public class StudentService {
         }
 
         studentProfile = studentProfileRepository.save(studentProfile);
+
+        // Recalculate match scores for all existing applications of this student
+        // so that adding/updating skills retroactively updates the score.
+        matchingService.recalculateScoresForStudent(studentProfile.getId());
 
         return studentMapper.toResponse(studentProfile);
     }
