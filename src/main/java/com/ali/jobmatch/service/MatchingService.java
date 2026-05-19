@@ -1,6 +1,7 @@
 package com.ali.jobmatch.service;
 
 import com.ali.jobmatch.entity.Application;
+import com.ali.jobmatch.entity.JobOffer;
 import com.ali.jobmatch.entity.JobSkill;
 import com.ali.jobmatch.entity.StudentProfile;
 import com.ali.jobmatch.entity.StudentSkill;
@@ -68,20 +69,55 @@ public class MatchingService {
         return ((double) matches / requiredSkills.size()) * 100;
     }
 
+    /**
+     * Calculate match score between a student profile and a specific job offer
+     * (without needing an existing Application record).
+     */
+    public Double calculateScoreForJob(StudentProfile studentProfile, JobOffer jobOffer) {
+        Map<Long, Integer> studentSkillMap = studentProfile.getSkills().stream()
+                .collect(Collectors.toMap(
+                        ss -> ss.getSkill().getId(),
+                        StudentSkill::getLevel
+                ));
+
+        List<JobSkill> requiredSkills = jobOffer.getRequiredSkills();
+
+        if (requiredSkills.isEmpty()) {
+            return 0.0;
+        }
+
+        double skillScore = requiredSkills.stream().mapToDouble(jobSkill -> {
+            Integer studentLevel = studentSkillMap.get(jobSkill.getSkill().getId());
+            if (studentLevel == null) return 0.0;
+            return Math.min((double) studentLevel / jobSkill.getRequiredLevel(), 1.0) * 100;
+        }).average().orElse(0.0);
+
+        String resumeText = fileStorageService.readResumeText(studentProfile.getResumeUrl());
+
+        if (resumeText.isBlank()) {
+            return skillScore;
+        }
+
+        double cvKeywordScore = calculateCvKeywordScore(resumeText, requiredSkills);
+        return (skillScore * 0.80) + (cvKeywordScore * 0.20);
+    }
+
     public void updateAllMatchScores() {
-        applicationRepository.findAll().forEach(application -> {
+        List<Application> applications = applicationRepository.findAll();
+        applications.forEach(application -> {
             double score = calculateMatchScore(application.getStudent(), application);
             application.setMatchScore(score);
-            applicationRepository.save(application);
         });
+        applicationRepository.saveAll(applications);
     }
 
     public void recalculateScoresForStudent(Long studentProfileId) {
-        applicationRepository.findByStudentId(studentProfileId).forEach(application -> {
+        List<Application> applications = applicationRepository.findByStudentId(studentProfileId);
+        applications.forEach(application -> {
             double score = calculateMatchScore(application.getStudent(), application);
             application.setMatchScore(score);
-            applicationRepository.save(application);
         });
+        applicationRepository.saveAll(applications);
     }
 }
 

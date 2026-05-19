@@ -7,6 +7,7 @@ import com.ali.jobmatch.repository.RefreshTokenRepository;
 import com.ali.jobmatch.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,5 +55,11 @@ public class RefreshTokenService {
     @Transactional
     public void deleteByUser(User user) {
         refreshTokenRepository.deleteByUser(user);
+    }
+
+    @Scheduled(fixedDelay = 86400000) // Run once per day
+    @Transactional
+    public void cleanupExpiredTokens() {
+        refreshTokenRepository.deleteByExpiryDateBefore(Instant.now());
     }
 }

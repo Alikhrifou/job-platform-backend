@@ -41,4 +41,11 @@ public class StudentProfile {
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudentSkill> skills = new ArrayList<>();
+
+    // Job preferences (used for matching & filtering)
+    private String preferredJobType;
+
+    private String preferredSeniorityLevel;
+
+    private Double expectedSalary;
 }

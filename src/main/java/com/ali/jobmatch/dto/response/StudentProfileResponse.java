@@ -23,4 +23,11 @@ public class StudentProfileResponse {
     private String resumeUrl;
     private String resumeOriginalName;
     private Map<String, Integer> skills; // skill name -> level
+
+    // Job preferences
+    private String preferredJobType;
+
+    private String preferredSeniorityLevel;
+
+    private Double expectedSalary;
 }

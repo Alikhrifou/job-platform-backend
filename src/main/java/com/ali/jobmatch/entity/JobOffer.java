@@ -50,10 +50,18 @@ public class JobOffer {
 
     private LocalDateTime closingDate;
 
+    @Column
+    @Enumerated(EnumType.STRING)
+    private SeniorityLevel seniorityLevel;
+
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JobSkill> requiredSkills = new ArrayList<>();
 
     public enum JobType {
         INTERNSHIP, JOB, PART_TIME, CONTRACT
+    }
+
+    public enum SeniorityLevel {
+        JUNIOR, MID, SENIOR
     }
 }

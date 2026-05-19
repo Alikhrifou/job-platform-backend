@@ -50,6 +50,9 @@ public class AuthController {
     @Operation(summary = "Refresh access token using refresh token")
     public ResponseEntity<Map<String, String>> refreshToken(@RequestBody Map<String, String> request) {
         String requestRefreshToken = request.get("refreshToken");
+        if (requestRefreshToken == null || requestRefreshToken.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Refresh token is required"));
+        }
         RefreshToken refreshToken = refreshTokenService.findByToken(requestRefreshToken);
         refreshTokenService.verifyExpiration(refreshToken);
 

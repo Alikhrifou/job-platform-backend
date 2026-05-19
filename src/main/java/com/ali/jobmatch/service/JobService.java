@@ -14,12 +14,15 @@ import com.ali.jobmatch.repository.JobRepository;
 import com.ali.jobmatch.repository.JobSkillRepository;
 import com.ali.jobmatch.repository.SkillRepository;
 import com.ali.jobmatch.repository.UserRepository;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -65,6 +68,9 @@ public class JobService {
         if (request.getJobType() != null) {
             jobOffer.setJobType(JobOffer.JobType.valueOf(request.getJobType().toUpperCase()));
         }
+        if (request.getSeniorityLevel() != null) {
+            jobOffer.setSeniorityLevel(JobOffer.SeniorityLevel.valueOf(request.getSeniorityLevel().toUpperCase()));
+        }
         jobOffer.setSalary(request.getSalary());
         jobOffer.setSalaryRange(request.getSalaryRange());
         jobOffer.setClosingDate(request.getClosingDate());
@@ -85,6 +91,11 @@ public class JobService {
         jobOffer.setLocation(request.getLocation());
         if (request.getJobType() != null) {
             jobOffer.setJobType(JobOffer.JobType.valueOf(request.getJobType().toUpperCase()));
+        }
+        if (request.getSeniorityLevel() != null) {
+            jobOffer.setSeniorityLevel(JobOffer.SeniorityLevel.valueOf(request.getSeniorityLevel().toUpperCase()));
+        } else {
+            jobOffer.setSeniorityLevel(null);
         }
         jobOffer.setSalary(request.getSalary());
         jobOffer.setSalaryRange(request.getSalaryRange());
@@ -125,20 +136,40 @@ public class JobService {
                 .collect(Collectors.toList());
     }
 
-    public List<JobOfferResponse> searchJobs(String title, String city) {
-        boolean hasTitle = title != null && !title.isBlank();
-        boolean hasCity  = city  != null && !city.isBlank();
-        List<JobOffer> results;
-        if (hasTitle && hasCity) {
-            results = jobRepository.findByTitleContainingIgnoreCaseAndLocationContainingIgnoreCase(title, city);
-        } else if (hasTitle) {
-            results = jobRepository.findByTitleContainingIgnoreCase(title);
-        } else if (hasCity) {
-            results = jobRepository.findByLocationContainingIgnoreCase(city);
-        } else {
-            results = jobRepository.findByIsActiveTrue();
-        }
-        return results.stream().map(jobMapper::toResponse).collect(Collectors.toList());
+    public List<JobOfferResponse> searchJobs(String title, String city, String jobType,
+                                              String seniorityLevel, Double minSalary, Double maxSalary) {
+        Specification<JobOffer> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isTrue(root.get("isActive")));
+            if (title != null && !title.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("title")), "%" + title.toLowerCase() + "%"));
+            }
+            if (city != null && !city.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("location")), "%" + city.toLowerCase() + "%"));
+            }
+            if (jobType != null && !jobType.isBlank()) {
+                try {
+                    predicates.add(cb.equal(root.get("jobType"), JobOffer.JobType.valueOf(jobType.toUpperCase())));
+                } catch (IllegalArgumentException ignored) {}
+            }
+            if (seniorityLevel != null && !seniorityLevel.isBlank()) {
+                try {
+                    predicates.add(cb.equal(root.get("seniorityLevel"), JobOffer.SeniorityLevel.valueOf(seniorityLevel.toUpperCase())));
+                } catch (IllegalArgumentException ignored) {}
+            }
+            if (minSalary != null) {
+                predicates.add(cb.or(
+                        cb.isNull(root.get("salary")),
+                        cb.greaterThanOrEqualTo(root.get("salary"), minSalary)));
+            }
+            if (maxSalary != null) {
+                predicates.add(cb.or(
+                        cb.isNull(root.get("salary")),
+                        cb.lessThanOrEqualTo(root.get("salary"), maxSalary)));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return jobRepository.findAll(spec).stream().map(jobMapper::toResponse).collect(Collectors.toList());
     }
 
     public List<JobOfferResponse> getCompanyJobs(Long companyId) {

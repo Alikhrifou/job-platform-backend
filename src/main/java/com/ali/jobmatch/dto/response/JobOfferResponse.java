@@ -18,6 +18,7 @@ public class JobOfferResponse {
     private String description;
     private String location;
     private String jobType;
+    private String seniorityLevel;
     private Double salary;
     private String salaryRange;
     private Boolean isActive;

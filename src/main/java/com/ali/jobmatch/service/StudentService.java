@@ -2,12 +2,14 @@ package com.ali.jobmatch.service;
 
 import com.ali.jobmatch.dto.request.StudentProfileRequest;
 import com.ali.jobmatch.dto.response.StudentProfileResponse;
+import com.ali.jobmatch.entity.JobOffer;
 import com.ali.jobmatch.entity.Skill;
 import com.ali.jobmatch.entity.StudentProfile;
 import com.ali.jobmatch.entity.StudentSkill;
 import com.ali.jobmatch.entity.User;
 import com.ali.jobmatch.exception.ResourceNotFoundException;
 import com.ali.jobmatch.mapper.StudentMapper;
+import com.ali.jobmatch.repository.JobRepository;
 import com.ali.jobmatch.repository.SkillRepository;
 import com.ali.jobmatch.repository.StudentProfileRepository;
 import com.ali.jobmatch.repository.StudentSkillRepository;
@@ -20,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class StudentService {
@@ -46,6 +50,9 @@ public class StudentService {
     @Autowired
     private MatchingService matchingService;
 
+    @Autowired
+    private JobRepository jobRepository;
+
     @Transactional
     public StudentProfileResponse createOrUpdateProfile(StudentProfileRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -61,6 +68,9 @@ public class StudentService {
         studentProfile.setGraduationDate(request.getGraduationDate());
         studentProfile.setBio(request.getBio());
         studentProfile.setPortfolioUrl(request.getPortfolioUrl());
+        studentProfile.setPreferredJobType(request.getPreferredJobType());
+        studentProfile.setPreferredSeniorityLevel(request.getPreferredSeniorityLevel());
+        studentProfile.setExpectedSalary(request.getExpectedSalary());
         // resumeUrl is managed separately via /profile/resume endpoint — do not overwrite here
 
         studentProfile = studentProfileRepository.save(studentProfile);
@@ -162,5 +172,28 @@ public class StudentService {
             profile.setResumeOriginalName(null);
             studentProfileRepository.save(profile);
         }
+    }
+
+    /**
+     * Calculate match scores for a list of job IDs for the currently authenticated student.
+     * Returns a map of jobId -> matchScore (0–100).
+     */
+    public Map<Long, Double> getMatchScoresForJobs(List<Long> jobIds) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        StudentProfile profile = studentProfileRepository.findByUserId(user.getId())
+                .orElse(null);
+
+        if (profile == null) {
+            return Map.of();
+        }
+
+        List<JobOffer> jobs = jobRepository.findAllById(jobIds);
+        return jobs.stream().collect(Collectors.toMap(
+                JobOffer::getId,
+                job -> matchingService.calculateScoreForJob(profile, job)
+        ));
     }
 }

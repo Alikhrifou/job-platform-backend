@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -84,5 +85,15 @@ public class StudentController {
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
+    }
+
+    @GetMapping("/match-scores")
+    @Operation(summary = "Get match scores for a list of job IDs for the current student")
+    public ResponseEntity<Map<Long, Double>> getMatchScores(
+            @RequestParam List<Long> jobIds) {
+        if (jobIds == null || jobIds.isEmpty()) {
+            return ResponseEntity.ok(Map.of());
+        }
+        return ResponseEntity.ok(studentService.getMatchScoresForJobs(jobIds));
     }
 }

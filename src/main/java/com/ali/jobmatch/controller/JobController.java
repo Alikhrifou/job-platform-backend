@@ -51,11 +51,15 @@ public class JobController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Search jobs by title and/or city")
+    @Operation(summary = "Search jobs with filters")
     public ResponseEntity<List<JobOfferResponse>> searchJobs(
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) String city) {
-        return ResponseEntity.ok(jobService.searchJobs(title, city));
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String jobType,
+            @RequestParam(required = false) String seniorityLevel,
+            @RequestParam(required = false) Double minSalary,
+            @RequestParam(required = false) Double maxSalary) {
+        return ResponseEntity.ok(jobService.searchJobs(title, city, jobType, seniorityLevel, minSalary, maxSalary));
     }
 
     @GetMapping("/my-jobs")

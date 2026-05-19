@@ -1,5 +1,6 @@
 package com.ali.jobmatch.security;
 
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -13,7 +14,7 @@ import java.util.Date;
 @Component
 public class JwtService {
 
-    @Value("${jwt.secret:mySecretKeyForJobMatchApplicationThatIsVeryLongAndSecureEnoughForHS512Algorithm}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
     @Value("${jwt.expiration:86400000}")
@@ -52,7 +53,7 @@ public class JwtService {
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (Exception ex) {
+        } catch (JwtException | IllegalArgumentException ex) {
             return false;
         }
     }

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -178,10 +179,21 @@ public class ApplicationService {
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        return applicationRepository.findAll().stream()
-                .filter(a -> a.getJob().getCompany().getUser().getId().equals(user.getId()))
+        return applicationRepository.findByJobCompanyUserId(user.getId())
+                .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    public Map<String, Long> getCompanyApplicationStats() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        List<Application> applications = applicationRepository.findByJobCompanyUserId(user.getId());
+        return applications.stream().collect(
+                Collectors.groupingBy(a -> a.getStatus().name(), Collectors.counting())
+        );
     }
 
     private ApplicationResponse toResponse(Application application) {

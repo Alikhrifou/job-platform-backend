@@ -22,6 +22,9 @@ public class StudentMapper {
         response.setPortfolioUrl(studentProfile.getPortfolioUrl());
         response.setResumeUrl(studentProfile.getResumeUrl());
         response.setResumeOriginalName(studentProfile.getResumeOriginalName());
+        response.setPreferredJobType(studentProfile.getPreferredJobType());
+        response.setPreferredSeniorityLevel(studentProfile.getPreferredSeniorityLevel());
+        response.setExpectedSalary(studentProfile.getExpectedSalary());
         response.setSkills(studentProfile.getSkills().stream()
                 .collect(Collectors.toMap(
                         ss -> ss.getSkill().getName(),
