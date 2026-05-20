@@ -47,6 +47,9 @@ public class ApplicationService {
     @Autowired
     private MatchingService matchingService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     public ApplicationResponse applyForJob(ApplicationRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findByEmail(authentication.getName())
@@ -118,6 +121,14 @@ public class ApplicationService {
         application.setStatus(status);
         application.setReviewedAt(java.time.LocalDateTime.now());
         applicationRepository.save(application);
+
+        // Notify the student about the status change
+        User student = application.getStudent().getUser();
+        String jobTitle = application.getJob().getTitle();
+        String title = "Application Update";
+        String message = "Your application for \"" + jobTitle + "\" has been updated to: " + status.name().replace("_", " ");
+        notificationService.createNotification(student, title, message, "/student/applications");
+
         return toResponse(application);
     }
 
@@ -141,6 +152,17 @@ public class ApplicationService {
         application.setRescheduleNote(null);
         application.setReviewedAt(java.time.LocalDateTime.now());
         applicationRepository.save(application);
+
+        // Notify the student
+        User student = application.getStudent().getUser();
+        String jobTitle = application.getJob().getTitle();
+        notificationService.createNotification(
+                student,
+                "Interview Scheduled",
+                "An interview has been scheduled for your application to \"" + jobTitle + "\". Please check the details.",
+                "/student/applications"
+        );
+
         return toResponse(application);
     }
 
@@ -169,6 +191,17 @@ public class ApplicationService {
             application.setRescheduleRequested(true);
             application.setInterviewConfirmed(false);
             application.setRescheduleNote(request.getRescheduleNote());
+
+            // Notify the company that the student requested a reschedule
+            User companyUser = application.getJob().getCompany().getUser();
+            String studentName = application.getStudent().getUser().getFirstName()
+                    + " " + application.getStudent().getUser().getLastName();
+            notificationService.createNotification(
+                    companyUser,
+                    "Reschedule Requested",
+                    studentName + " has requested to reschedule their interview for \"" + application.getJob().getTitle() + "\".",
+                    "/company/applications/" + application.getJob().getId()
+            );
         }
         applicationRepository.save(application);
         return toResponse(application);
