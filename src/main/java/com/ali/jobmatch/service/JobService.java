@@ -187,7 +187,7 @@ public class JobService {
                 .orElseThrow(() -> new ResourceNotFoundException("Company profile not found"));
         return jobRepository.findByCompanyId(companyProfile.getId())
                 .stream()
-                .map(jobOffer -> jobMapper.toResponse(jobOffer))
+                .map(jobOffer -> jobMapper.toResponse(jobOffer, applicationRepository.countByJobId(jobOffer.getId())))
                 .collect(Collectors.toList());
     }
 
